@@ -1,0 +1,37 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: ai_incident_postgres
+
+    environment:
+      POSTGRES_DB: ai_incident_investigator
+      POSTGRES_USER: ai_incident_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - ai_incident_investigator_postgres_data:/var/lib/postgresql/data
+
+    networks:
+      - dockerlab_network
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ai_incident_user -d ai_incident_investigator"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  ai_incident_investigator_postgres_data:
+
+networks:
+  dockerlab_network:
+    external: true
