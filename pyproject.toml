@@ -24,6 +24,7 @@ dependencies = [
     "sqlalchemy>=2",
     "psycopg[binary]",
     "pgvector",
+    "alembic",
 
     # Data engineering
     "pyspark",
