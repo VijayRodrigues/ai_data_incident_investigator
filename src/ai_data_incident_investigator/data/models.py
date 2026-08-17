@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
@@ -580,6 +581,67 @@ class Finding(Base):
         cascade="all, delete-orphan",
     )
 
+    evidence_links: Mapped[list["FindingEvidence"]] = relationship(
+        back_populates="finding",
+        cascade="all, delete-orphan",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Finding evidence links
+# ---------------------------------------------------------------------------
+
+
+class FindingEvidence(Base):
+    __tablename__ = "finding_evidence"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "finding_id",
+            "evidence_chunk_id",
+            name="uq_finding_evidence_finding_chunk",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+    )
+
+    finding_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("findings.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    evidence_chunk_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("evidence_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    relevance_distance: Mapped[float | None] = mapped_column(
+        Numeric(12, 8),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    finding: Mapped["Finding"] = relationship(
+        back_populates="evidence_links",
+    )
+
+    evidence_chunk: Mapped["EvidenceChunk"] = relationship(
+        back_populates="finding_links",
+    )
+
 
 # ---------------------------------------------------------------------------
 # Evidence
@@ -724,6 +786,11 @@ class EvidenceChunk(Base):
 
     evidence: Mapped["Evidence"] = relationship(
         back_populates="chunks",
+    )
+
+    finding_links: Mapped[list["FindingEvidence"]] = relationship(
+        back_populates="evidence_chunk",
+        cascade="all, delete-orphan",
     )
 
 
