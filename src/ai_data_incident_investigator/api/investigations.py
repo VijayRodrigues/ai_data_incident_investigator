@@ -22,6 +22,9 @@ from ai_data_incident_investigator.data.investigation_service import (
 from ai_data_incident_investigator.data.remediation_service import (
     create_remediation_actions,
 )
+from ai_data_incident_investigator.data.models import (
+    InvestigationRun,
+)
 
 
 router = APIRouter(
@@ -60,6 +63,17 @@ class RemediationActionResponse(BaseModel):
     status: str
 
 
+class FindingResponse(BaseModel):
+    id: UUID
+    finding_type: str
+    title: str
+    description: str
+    severity: str
+    confidence_score: float | None
+    is_root_cause_candidate: bool
+    evidence_summary: str | None
+
+
 class InvestigationResponse(BaseModel):
     investigation_run_id: UUID
     finding_id: UUID
@@ -74,6 +88,25 @@ class InvestigationResponse(BaseModel):
 
     evidence_links: list[EvidenceLinkResponse]
     remediation_actions: list[RemediationActionResponse]
+
+
+class InvestigationHistoryItem(BaseModel):
+    investigation_run_id: UUID
+    incident_id: UUID
+    run_number: int
+    status: str
+    investigator_type: str
+    model_name: str
+    summary: str | None
+    confidence_score: float | None
+    started_at: object | None
+    completed_at: object | None
+    findings: list[FindingResponse]
+
+
+class InvestigationHistoryResponse(BaseModel):
+    incident_id: UUID
+    investigations: list[InvestigationHistoryItem]
 
 
 @router.post(
@@ -202,3 +235,84 @@ def investigate_incident(
             status_code=500,
             detail=f"Investigation failed: {exc}",
         )
+
+
+@router.get(
+    "/{incident_id}/investigations",
+    response_model=InvestigationHistoryResponse,
+)
+def get_investigation_history(
+    incident_id: UUID,
+    session: Session = Depends(get_db),
+):
+    incident = get_incident(
+        session,
+        incident_id,
+    )
+
+    if incident is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found",
+        )
+
+    runs = (
+        session.query(InvestigationRun)
+        .filter(
+            InvestigationRun.incident_id == incident_id
+        )
+        .order_by(
+            InvestigationRun.run_number.desc()
+        )
+        .all()
+    )
+
+    history = []
+
+    for run in runs:
+        findings = []
+
+        for finding in run.findings:
+            findings.append(
+                FindingResponse(
+                    id=finding.id,
+                    finding_type=finding.finding_type.value,
+                    title=finding.title,
+                    description=finding.description,
+                    severity=finding.severity.value,
+                    confidence_score=(
+                        float(finding.confidence_score)
+                        if finding.confidence_score is not None
+                        else None
+                    ),
+                    is_root_cause_candidate=(
+                        finding.is_root_cause_candidate
+                    ),
+                    evidence_summary=finding.evidence_summary,
+                )
+            )
+
+        history.append(
+            InvestigationHistoryItem(
+                investigation_run_id=run.id,
+                incident_id=run.incident_id,
+                run_number=run.run_number,
+                status=run.status.value,
+                investigator_type=run.investigator_type.value,
+                model_name=run.model_name,
+                summary=run.summary,
+                confidence_score=(
+                    float(run.confidence_score)
+                    if run.confidence_score is not None
+                    else None
+                ),
+                started_at=run.started_at,
+                completed_at=run.completed_at,
+                findings=findings,
+            )
+        )
+
+    return InvestigationHistoryResponse(
+        incident_id=incident_id,
+        investigations=history,
+    )
