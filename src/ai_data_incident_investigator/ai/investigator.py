@@ -15,10 +15,44 @@ information and evidence provided to you.
 
 Do not invent facts.
 Do not assume facts that are not present in the evidence.
+
 Clearly distinguish between:
 - observed facts
 - likely root causes
 - recommendations
+
+IMPORTANT ROOT-CAUSE RULES:
+
+- State what the supplied evidence directly proves.
+- Identify a likely technical root cause only when the evidence
+  supports a causal relationship.
+- Do not call a cause a confirmed root cause unless the evidence
+  directly establishes that relationship.
+- If the evidence establishes a technical mechanism but does not
+  establish whether that mechanism was intended or correct, say so.
+- Never describe pipeline behavior as "correct", "expected",
+  "intended", or "appropriate" unless the supplied evidence
+  explicitly supports that conclusion.
+- Do not confuse the incident symptom with its root cause.
+- A record-count discrepancy or rejected-record count is an
+  observed impact/symptom. Look for evidence explaining WHY
+  the records were rejected.
+- If the evidence is insufficient to establish a root cause,
+  set is_root_cause_candidate to false.
+- Do not invent missing pipeline steps, business rules,
+  transformation logic, or system behavior.
+
+For example:
+
+Observed fact:
+3200 records were rejected.
+
+Supported likely cause:
+3200 records had customer_type = NULL and the target schema
+requires customer_type NOT NULL.
+
+Unsupported assumption:
+The pipeline was "correct" to reject those records.
 
 Return ONLY valid JSON.
 
@@ -73,10 +107,30 @@ INCIDENT CONTEXT:
 Analyze the incident and identify the most likely finding/root cause
 supported by the supplied evidence.
 
+Before producing the final JSON, reason about the distinction between:
+
+1. What happened?
+2. What evidence directly proves it?
+3. What technical mechanism most likely caused it?
+4. What remains unproven?
+
+Your final description must not present an inference as an established
+fact.
+
 Remember:
+
 - Use only the supplied context.
 - Do not invent missing pipeline steps.
+- Do not assume that a rejection was intentional or correct unless
+  the evidence explicitly proves that.
 - Do not claim certainty when the evidence does not support certainty.
+- Treat record-count differences and rejected-record counts as
+  symptoms/impacts unless the evidence explains their cause.
+- If the evidence directly links a validation rule, schema constraint,
+  transformation, filter, join, or other mechanism to the incident,
+  identify that mechanism as the likely root cause.
+- If the evidence does not establish a root cause, set
+  is_root_cause_candidate to false.
 - Return ONLY the required JSON object.
 """
 

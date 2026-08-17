@@ -20,7 +20,7 @@ from ai_data_incident_investigator.data.remediation_service import (
 )
 
 
-INCIDENT_ID = "90313020-a51b-40c5-9576-ed0ba1d91a18"
+INCIDENT_ID = "662ec2f4-588b-4b8c-a36d-48017d4b5848"
 
 
 def main() -> None:
