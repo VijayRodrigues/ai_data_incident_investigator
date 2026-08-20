@@ -2,7 +2,7 @@
 
 An end-to-end data engineering and AI system for detecting, investigating,
 and explaining data incidents using evidence from data pipelines,
-quality checks, metadata, documentation, and historical incidents.
+quality checks, metadata, documentation, and historical incidents. 
 
 ## Architecture
 
